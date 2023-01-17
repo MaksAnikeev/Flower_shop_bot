@@ -16,21 +16,9 @@ def main():
     updater.idle()
 
 def start(update, context):
-<<<<<<< Updated upstream
-    user_fullname = str(update.message.from_user['first_name']) + ' ' + str(
-    update.message.from_user['last_name'])
-
-    context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"Здравствуйте {user_fullname}. Это официальный бот по поддержке участников"
-=======
-    #user_fullname = str(update.message.from_user['first_name']) + ' ' + str(
-   # update.message.from_user['last_name'])
-
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"К какому событию готовимся? Выберите один из вариантов, либо укажите свой"
->>>>>>> Stashed changes
     )
 
 
