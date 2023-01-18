@@ -1,3 +1,5 @@
 Django==4.1
 python-telegram-bot
 environs==9.5.0
+django-phonenumber-field[phonenumbers]
+Pillow
