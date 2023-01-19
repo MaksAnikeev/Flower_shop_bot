@@ -1,6 +1,8 @@
 Django==4.1
-python-telegram-bot
+python-telegram-bot==13.12
 environs==9.5.0
 django-phonenumber-field[phonenumbers]
 Pillow
 requests
+python-dotenv==0.21.0
+more-itertools==9.0.0

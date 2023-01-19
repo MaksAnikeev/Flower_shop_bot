@@ -23,8 +23,6 @@ def send_bunch(request) -> JsonResponse:
             reason=reason,
         )
 
-        print(bunches)
-
         response = {
             'status': 'true',
             'bunch': [
@@ -44,3 +42,25 @@ def send_bunch(request) -> JsonResponse:
         'message': 'Not supported method'
     }
     return JsonResponse(response, status=501)
+
+
+def send_categories(request) -> JsonResponse:
+    """
+    Отправка категорий для формирования клавиатуры
+    """
+    categories = CategoryPrice.objects.all()
+    response = {
+        'categories': [category.name for category in categories]
+    }
+    return JsonResponse(response, status=200)
+
+
+def send_reasons(request) -> JsonResponse:
+    """
+    Отправка повода для формирования клавиатуры
+    """
+    reasons = Reason.objects.all()
+    response = {
+        'categories': [reason.name for reason in reasons]
+    }
+    return JsonResponse(response, status=200)

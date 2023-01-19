@@ -11,6 +11,7 @@ from telegram import ParseMode
 from dotenv import load_dotenv
 from pprint import pprint
 from textwrap import dedent
+from more_itertools import chunked
 
 
 load_dotenv()
@@ -27,7 +28,12 @@ def start(update, context):
 
 
 def choise(update, context):
-    message_keyboard = [["✅ Да", "❌ Нет"]]
+    url = f"http://127.0.0.1:8000/categories/send/"
+    response = requests.get(url)
+    print(response)
+    categories = response.json()['categories']
+    categories.extend(["Не важно", "Свое предложение"])
+    message_keyboard = list(chunked(categories, 2))
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -35,6 +41,9 @@ def choise(update, context):
     )
     menu_msg = 'Пора бы сделать выбор'
     update.message.reply_text(text=menu_msg, reply_markup=markup)
+
+
+
 
 
 
