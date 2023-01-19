@@ -30,9 +30,8 @@ def start(update, context):
 def choise(update, context):
     url = f"http://127.0.0.1:8000/categories/send/"
     response = requests.get(url)
-    print(response)
     categories = response.json()['categories']
-    categories.extend(["Не важно", "Свое предложение"])
+    categories.extend(["Без повода", "Не важно"])
     message_keyboard = list(chunked(categories, 2))
     markup = ReplyKeyboardMarkup(
         message_keyboard,
@@ -50,13 +49,14 @@ def choise(update, context):
 def get_bunch(update, context):
     url = f"http://127.0.0.1:8000/bunch/send/"
     payload = {
-        "category": 'более 2000р',
-        "reason": 'День рождения',
+        "category": 'Не важно',
+        "reason": 'Без повода',
     }
     response = requests.post(url, data=payload)
 
     if response.ok:
         bunches = response.json()
+        pprint(bunches)
         bunch = bunches['bunch'][0]
 
         menu_msg = dedent(f"""\
@@ -113,7 +113,7 @@ def button(update, context):
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-get_bunch_handler = MessageHandler(Filters.text("✅ Да"), get_bunch)
+get_bunch_handler = MessageHandler(Filters.text, get_bunch)
 dispatcher.add_handler(get_bunch_handler)
 
 get_no_handler = MessageHandler(Filters.text("❌ Нет"), get_no)
