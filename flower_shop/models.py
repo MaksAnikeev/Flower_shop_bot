@@ -1,5 +1,5 @@
 from django.db import models
-from phonenumber_field.modelfields import PhoneNumberField
+# from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Reason(models.Model):
@@ -120,11 +120,11 @@ class Order(models.Model):
         verbose_name='адрес'
     )
 
-    phonenumber = PhoneNumberField(
-        verbose_name='номер телефона',
-        region='RU',
-        db_index=True
-    )
+    # phonenumber = PhoneNumberField(
+    #     verbose_name='номер телефона',
+    #     region='RU',
+    #     db_index=True
+    # )
 
     comment = models.TextField(
         verbose_name='комментарий к заказу',
