@@ -15,13 +15,30 @@ def send_bunch(request) -> JsonResponse:
     Отправка букета по выбранным параметрам в телеграмбота
     """
     if request.method == 'POST':
-        category = CategoryPrice.objects.get(name=request.POST.get('category'))
-        reason = Reason.objects.get(name=request.POST.get('reason'))
+        name_category = request.POST.get('category')
+        name_reason = request.POST.get('reason')
+        if name_category == "Не важно":
+            if name_reason == "Без повода":
+                bunches = FlowersBunch.objects.all()
+            else:
+                reason = Reason.objects.get(name=name_reason)
+                bunches = FlowersBunch.objects.filter(
+                    reason=reason,
+                )
+        else:
+            if name_reason == "Без повода":
+                category = CategoryPrice.objects.get(name=name_category)
+                bunches = FlowersBunch.objects.filter(
+                    category=category,
+                )
+            else:
+                category = CategoryPrice.objects.get(name=name_category)
+                reason = Reason.objects.get(name=name_reason)
+                bunches = FlowersBunch.objects.filter(
+                    category=category,
+                    reason=reason,
+                )
 
-        bunches = FlowersBunch.objects.filter(
-            category=category,
-            reason=reason,
-        )
 
         response = {
             'status': 'true',
