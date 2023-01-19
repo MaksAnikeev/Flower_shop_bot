@@ -1,5 +1,6 @@
 import os
 import requests
+import time
 
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot,
                       ReplyKeyboardMarkup, KeyboardButton)
@@ -21,6 +22,7 @@ dispatcher = updater.dispatcher
 
 def start(update, context):
     context.bot.send_message(update.effective_chat.id, text='Привет хочешь букет')
+    time.sleep(3)
     return choise(update, context)
 
 
