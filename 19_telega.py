@@ -30,6 +30,7 @@ class BotData:
     # frorist_chat_id = 5432002795
     # courier_chat_id = 5432002795
 
+
 def call_api(endpoint):
     url = f"http://127.0.0.1:8000/{endpoint}"
     response = requests.get(url)
