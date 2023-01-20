@@ -1,5 +1,6 @@
 import os
 import requests
+import pprint
 
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot,
                       ReplyKeyboardMarkup, KeyboardButton)
@@ -18,26 +19,50 @@ class States(Enum):
     CHOISE_REASON = auto()
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
+    MESSAGE_TO_FLORIST = auto()
+    GET_NAME = auto()
+    GET_ADDRESS = auto()
+    GET_DELIVERY_PERIOD = auto()
+
+class BotData:
+    frorist_chat_id = 5432002795
+    courier_chat_id = 5432002795
+
+
+def call_api(endpoint):
+    url = f"http://127.0.0.1:8000/{endpoint}"
+    response = requests.get(url)
+    response.raise_for_status()
+    return response.json()
 
 
 def start(update, context):
-    url = f"http://127.0.0.1:8000/reasons/send/"
-    response = requests.get(url)
-    categories = response.json()['reasons']
+    categories = call_api('reasons/send/')['reasons']
     categories.extend(["Без повода", "Другой повод"])
     message_keyboard = list(chunked(categories, 2))
+    print(update.message.chat.id)
+
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    menu_msg = 'Привет. Выберите повод для букета'
+    menu_msg = 'К какому событию готовимся? Выберите один из вариантов, либо укажите свой'
+    
     update.message.reply_text(text=menu_msg, reply_markup=markup)
     return States.CHOISE_REASON
 
 
 def another_reason(update, context):
     update.message.reply_text('Напишите флористу')
+    return States.MESSAGE_TO_FLORIST
+
+
+def message_to_florist(update, context):
+    update.message.chat.id = BotData.frorist_chat_id
+    menu_msg = update.message.text
+    update.message.reply_text(text=menu_msg)
+    return
 
 
 def choise_category(update, context):
@@ -81,6 +106,8 @@ def get_bunch(update, context):
             {bunch.get('composition')}
             """).replace("    ", "")
 
+        context.user_data["order"] = menu_msg
+
         message_keyboard = [
             [
                 "Флорист",
@@ -107,6 +134,35 @@ def get_bunch(update, context):
 
 def florist(update, context):
     update.message.reply_text('Напишите флористу')
+    return States.MESSAGE_TO_FLORIST
+
+
+def order(update, context):
+    update.message.reply_text('Напишите ваше имя')
+    return States.GET_NAME
+
+
+def get_name(update, context):
+    context.user_data["user_name"] = update.message.text
+    update.message.reply_text('По какому адресу доставить')
+    return States.GET_ADDRESS
+
+def get_address(update, context):
+    context.user_data["address"] = update.message.text
+    update.message.reply_text('В какой день и в какое время желаете получить доставку')
+    return States.GET_DELIVERY_PERIOD
+
+def get_delivery_time(update, context):
+    context.user_data["delivery_time"] = update.message.text
+    update.message.reply_text('Спасибо за заказ, в ближайшее время курьер свяжется с вами')
+    update.message.chat.id = BotData.courier_chat_id
+    menu_msg = dedent(f"""\
+                <b>Имя клиента: {context.user_data["user_name"]}</b>
+                <b>Адрес: {context.user_data["address"]} </b>
+                <b>Дата и время доставки: {context.user_data["delivery_time"]}</b>
+                """).replace("    ", "")
+    update.message.reply_text(text=menu_msg)
+    return
 
 
 if __name__ == '__main__':
@@ -127,6 +183,11 @@ if __name__ == '__main__':
                     Filters.text, choise_category
                 ),
             ],
+            States.MESSAGE_TO_FLORIST: [
+                MessageHandler(
+                    Filters.text, message_to_florist
+                ),
+            ],
             States.CHOISE_CATEGORY: [
                 MessageHandler(
                     Filters.text, get_bunch
@@ -135,8 +196,28 @@ if __name__ == '__main__':
             States.CHOISE_PEOPLE: [
                 MessageHandler(
                     Filters.text("Флорист"), florist
+                ),
+                MessageHandler(
+                    Filters.text("Заказ"), order
                 )
+
             ],
+            States.GET_NAME: [
+                MessageHandler(
+                    Filters.text, get_name
+                ),
+            ],
+            States.GET_ADDRESS: [
+                MessageHandler(
+                    Filters.text, get_address
+                ),
+            ],
+            States.GET_DELIVERY_PERIOD: [
+                MessageHandler(
+                    Filters.text, get_delivery_time
+                ),
+            ],
+
         },
         fallbacks=[],
         allow_reentry=True,
