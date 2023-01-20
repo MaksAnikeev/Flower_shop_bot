@@ -25,9 +25,10 @@ class States(Enum):
     GET_DELIVERY_PERIOD = auto()
 
 class BotData:
-    frorist_chat_id = 5432002795
-    courier_chat_id = 5432002795
-
+    frorist_chat_id = 704859099
+    courier_chat_id = 704859099
+    # frorist_chat_id = 5432002795
+    # courier_chat_id = 5432002795
 
 def call_api(endpoint):
     url = f"http://127.0.0.1:8000/{endpoint}"
@@ -94,38 +95,41 @@ def get_bunch(update, context):
     if response.ok:
         bunches = response.json()
         pprint(bunches)
-        bunch = bunches['bunch'][0]
+        if not bunches['bunch']:
+            update.message.reply_text('Такого букета нет 😥')
+        else:
+            bunch = bunches['bunch'][0]
 
-        menu_msg = dedent(f"""\
-            <b>{bunch.get('name')}</b>
-            <b>Цена {bunch.get('price')} руб</b>
+            menu_msg = dedent(f"""\
+                <b>{bunch.get('name')}</b>
+                <b>Цена {bunch.get('price')} руб</b>
+    
+                <b>Описание</b>
+                {bunch.get('description')}
+                <b>Состав:</b>
+                {bunch.get('composition')}
+                """).replace("    ", "")
 
-            <b>Описание</b>
-            {bunch.get('description')}
-            <b>Состав:</b>
-            {bunch.get('composition')}
-            """).replace("    ", "")
+            context.user_data["order"] = menu_msg
 
-        context.user_data["order"] = menu_msg
-
-        message_keyboard = [
-            [
-                "Флорист",
-                "Заказ"
+            message_keyboard = [
+                [
+                    "Флорист",
+                    "Заказ"
+                ]
             ]
-        ]
-        markup = ReplyKeyboardMarkup(
-            message_keyboard,
-            resize_keyboard=True,
-            one_time_keyboard=True
-        )
-        bunch_img = requests.get(bunch['image'])
-        update.message.reply_photo(
-            bunch_img.content,
-            caption=menu_msg,
-            reply_markup=markup,
-            parse_mode=ParseMode.HTML
-        )
+            markup = ReplyKeyboardMarkup(
+                message_keyboard,
+                resize_keyboard=True,
+                one_time_keyboard=True
+            )
+            bunch_img = requests.get(bunch['image'])
+            update.message.reply_photo(
+                bunch_img.content,
+                caption=menu_msg,
+                reply_markup=markup,
+                parse_mode=ParseMode.HTML
+            )
     else:
         update.message.reply_text('Такого букета нет 😥')
 
