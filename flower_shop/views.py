@@ -78,6 +78,6 @@ def send_reasons(request) -> JsonResponse:
     """
     reasons = Reason.objects.all()
     response = {
-        'categories': [reason.name for reason in reasons]
+        'reasons': [reason.name for reason in reasons]
     }
     return JsonResponse(response, status=200)

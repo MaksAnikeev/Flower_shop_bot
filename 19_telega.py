@@ -1,6 +1,5 @@
 import os
 import requests
-import time
 
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot,
                       ReplyKeyboardMarkup, KeyboardButton)
@@ -12,45 +11,58 @@ from dotenv import load_dotenv
 from pprint import pprint
 from textwrap import dedent
 from more_itertools import chunked
+from enum import Enum, auto
 
 
-load_dotenv()
-tg_bot_token = os.getenv("TG_BOT_TOKEN")
-bot = Bot(token=tg_bot_token)
-updater = Updater(token=tg_bot_token)
-dispatcher = updater.dispatcher
+class States(Enum):
+    CHOISE_REASON = auto()
+    CHOISE_CATEGORY = auto()
+    CHOISE_PEOPLE = auto()
 
 
 def start(update, context):
-    context.bot.send_message(update.effective_chat.id, text='Привет хочешь букет')
-    time.sleep(3)
-    return choise(update, context)
-
-
-def choise(update, context):
-    url = f"http://127.0.0.1:8000/categories/send/"
+    url = f"http://127.0.0.1:8000/reasons/send/"
     response = requests.get(url)
-    categories = response.json()['categories']
-    categories.extend(["Без повода", "Не важно"])
+    categories = response.json()['reasons']
+    categories.extend(["Без повода", "Другой повод"])
     message_keyboard = list(chunked(categories, 2))
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
         one_time_keyboard=True
     )
-    menu_msg = 'Пора бы сделать выбор'
+    menu_msg = 'Привет. Выберите повод для букета'
     update.message.reply_text(text=menu_msg, reply_markup=markup)
+    return States.CHOISE_REASON
 
 
+def another_reason(update, context):
+    update.message.reply_text('Напишите флористу')
 
 
+def choise_category(update, context):
+    url = f"http://127.0.0.1:8000/categories/send/"
+    response = requests.get(url)
+    categories = response.json()['categories']
+    categories.extend(["Не важно"])
+    message_keyboard = list(chunked(categories, 2))
+    markup = ReplyKeyboardMarkup(
+        message_keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    menu_msg = 'Выберите ценовую категорию'
+    update.message.reply_text(text=menu_msg, reply_markup=markup)
+    context.user_data['reason'] = update.message.text
+    return States.CHOISE_CATEGORY
 
 
 def get_bunch(update, context):
+    context.user_data['category'] = update.message.text
     url = f"http://127.0.0.1:8000/bunch/send/"
     payload = {
-        "category": 'Не важно',
-        "reason": 'Без повода',
+        "category": context.user_data['category'],
+        "reason": context.user_data['reason'],
     }
     response = requests.post(url, data=payload)
 
@@ -90,40 +102,48 @@ def get_bunch(update, context):
     else:
         update.message.reply_text('Такого букета нет 😥')
 
-
-def get_no(update, context):
-    update.message.reply_text('Ну и дура')
+    return States.CHOISE_PEOPLE
 
 
-def choise2(update, context):
-    keyboard = [
-        [InlineKeyboardButton('Позвонить', callback_data='1'), InlineKeyboardButton('Написать', callback_data='2')],
-    ]
-    update.message.reply_text('Дай ответ', reply_markup=InlineKeyboardMarkup(keyboard))
+def florist(update, context):
+    update.message.reply_text('Напишите флористу')
 
 
-def button(update, context):
-    q = update.callback_query
-    q.answer()
-    if q.data == '1':
-        context.bot.send_message(update.effective_chat.id, 'Че звонить когда все заняты')
-    elif q.data == '2':
-        context.bot.send_message(update.effective_chat.id, 'Пиши, все равно не ответим')
+if __name__ == '__main__':
+    load_dotenv()
+    tg_bot_token = os.getenv("TG_BOT_TOKEN")
+    bot = Bot(token=tg_bot_token)
+    updater = Updater(token=tg_bot_token, use_context=True)
+    dispatcher = updater.dispatcher
 
-start_handler = CommandHandler('start', start)
-dispatcher.add_handler(start_handler)
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            States.CHOISE_REASON: [
+                MessageHandler(
+                    Filters.text("Другой повод"), another_reason
+                ),
+                MessageHandler(
+                    Filters.text, choise_category
+                ),
+            ],
+            States.CHOISE_CATEGORY: [
+                MessageHandler(
+                    Filters.text, get_bunch
+                )
+            ],
+            States.CHOISE_PEOPLE: [
+                MessageHandler(
+                    Filters.text("Флорист"), florist
+                )
+            ],
+        },
+        fallbacks=[],
+        allow_reentry=True,
+        name='bot_conversation',
+    )
 
-get_bunch_handler = MessageHandler(Filters.text, get_bunch)
-dispatcher.add_handler(get_bunch_handler)
+    dispatcher.add_handler(conv_handler)
 
-get_no_handler = MessageHandler(Filters.text("❌ Нет"), get_no)
-dispatcher.add_handler(get_no_handler)
-
-florist_handler = MessageHandler(Filters.text("Флорист"), choise2)
-dispatcher.add_handler(florist_handler)
-
-button_handler = CallbackQueryHandler(button)
-dispatcher.add_handler(button_handler)
-
-updater.start_polling()
-updater.idle()
+    updater.start_polling()
+    updater.idle()

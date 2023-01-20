@@ -38,8 +38,8 @@ def main():
     get_bunch_handler = MessageHandler(Filters.text(categories_menu_keyboard[:-1]), get_bunch)
     dispatcher.add_handler(get_bunch_handler)
 
-    get_another_reason_handler = MessageHandler(Filters.text(reasons_menu_keyboard[-1]), get_another_reason)
-    dispatcher.add_handler(get_another_reason_handler)
+    # get_another_reason_handler = MessageHandler(Filters.text(reasons_menu_keyboard[-1]), get_another_reason)
+    # dispatcher.add_handler(get_another_reason_handler)
 
 
 
@@ -119,10 +119,10 @@ def choice_button(update, context):
             )
 
 
-def get_another_reason():
-
-    keyboard = ['Да']
-    update.message.reply_text(text='Другая причина')
+# def get_another_reason():
+#
+#     keyboard = ['Да']
+#     update.message.reply_text(text='Другая причина')
     
 def get_bunch(update, context):
     url = f"http://127.0.0.1:8000/bunch/send/"
