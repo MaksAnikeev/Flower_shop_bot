@@ -49,9 +49,9 @@ def call_api(endpoint):
 
 def start(update, context):
     categories = call_api('reasons/send/')['reasons']
-    categories.extend(["Без повода", "Другой повод", "Курьер"])    
-    message_keyboard = list(chunked(categories, 2))
     context.user_data['reasons'] = categories
+    categories.extend(["Без повода", "Другой повод", "Курьер"])    
+    message_keyboard = list(chunked(categories, 2))    
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -144,8 +144,8 @@ def choise_category(update, context):
     url = f"http://127.0.0.1:8000/categories/send/"
     response = requests.get(url)
     categories = response.json()['categories']
-    categories.extend(["Не важно"])
     context.user_data['categories'] = categories
+    categories.extend(["Не важно"])
     message_keyboard = list(chunked(categories, 2))
     markup = ReplyKeyboardMarkup(
         message_keyboard,
@@ -164,15 +164,16 @@ def get_answer_from_catalogue(context, random_category=False):
         "category": context.user_data['category'],
         "reason": context.user_data['reason'],
     } 
-    if random_category:
-        payload = {
-        "category": context.user_data['categories'],
-        "reason": context.user_data['reasons'],
-    } 
-    url = f"http://127.0.0.1:8000/bunch/send/"
+    url = "http://127.0.0.1:8000/bunch/send/"
     response = requests.post(url, data=payload)
+    if random_category:
+        url = "http://127.0.0.1:8000/random_bunch/send/"
+        response = requests.post(url)
     response.raise_for_status()
-    return response  
+    return  response
+
+
+
 
 
 def get_bunch(update, context):
@@ -182,16 +183,48 @@ def get_bunch(update, context):
     if response.ok:
         bunches = response.json()        
         if not bunches['bunch']:
-            update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')
-            response = get_answer_from_catalogue(context, True)
-            bunches = response.json()
+            get_default_bunch(update, context)
+            return States.CHOISE_PEOPLE
         context.user_data['bunches'] = bunches
         get_choice_bunch(update, context)           
     else:
         update.message.reply_text('Ошибка соединения, начните поиск сначала 😥')
         return States.CHOISE_CATEGORY
     return States.CHOISE_PEOPLE
+
+
+def get_default_bunch(update, context):
+
+    update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')    
+    url = "http://127.0.0.1:8000/random_bunch/send/"
+    response = requests.get(url)
+    print(response)
+    bunch = response.json()['bunch']
+    print(bunch)
+    menu_msg = get_menu_msg(bunch)
+    context.user_data["order"] = menu_msg
+    message_keyboard = [
+                [
+                    "Флорист",
+                    "Заказ"],
+                #[    "Другой букет",
+                #    "Все букеты"]
+                ]            
     
+    markup = ReplyKeyboardMarkup(
+                message_keyboard,
+                resize_keyboard=True,
+                one_time_keyboard=True
+            )
+    bunch_img = requests.get(bunch['image'])
+    update.message.reply_photo(
+                bunch_img.content,
+                caption=menu_msg,
+                reply_markup=markup,
+                parse_mode=ParseMode.HTML
+            )
+
+
 def get_menu_msg(bunch):
 
     menu_msg = dedent(f"""\
