@@ -13,6 +13,7 @@ from pprint import pprint
 from textwrap import dedent
 from more_itertools import chunked
 from enum import Enum, auto
+from random import choice
 
 
 class States(Enum):
@@ -29,6 +30,7 @@ class BotData:
     courier_chat_id = 704859099
     # frorist_chat_id = 5432002795
     # courier_chat_id = 5432002795
+
 
 def call_api(endpoint):
     url = f"http://127.0.0.1:8000/{endpoint}"
@@ -98,7 +100,7 @@ def get_bunch(update, context):
         if not bunches['bunch']:
             update.message.reply_text('Такого букета нет 😥')
         else:
-            bunch = bunches['bunch'][0]
+            bunch = choice (bunches['bunch'])
 
             menu_msg = dedent(f"""\
                 <b>{bunch.get('name')}</b>
