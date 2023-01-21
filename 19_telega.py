@@ -226,9 +226,6 @@ def get_default_bunch(update, context):
 
 
 def get_menu_msg(bunch):
-
-
-def get_menu_msg(bunch):
     menu_msg = dedent(f"""\
         <b>{bunch.get('name')}</b>
         <b>Цена {bunch.get('price')} руб</b>
