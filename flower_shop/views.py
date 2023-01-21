@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import FlowersBunch, CategoryPrice, Reason, Order
-
+from random import choice
 
 def index_page(request):
     context = {}
@@ -90,31 +90,39 @@ def create_order(request) -> JsonResponse:
     Создание объекта заказа
     """
     if request.method == 'POST':
-        firstname = request.POST.get('firstname')
-        address = request.POST.get('address')
-        phonenumber = request.POST.get('phonenumber')
-        delivered_at = request.POST.get('delivered_at')
-        bunch = FlowersBunch.objects.get(id=request.POST.get('bunch_id'))
+        try:
+            firstname = request.POST.get('firstname')
+            address = request.POST.get('address')
+            phonenumber = request.POST.get('phonenumber')
+            delivered_at = request.POST.get('delivered_at')
+            bunch = FlowersBunch.objects.get(id=request.POST.get('bunch_id'))
 
-        order = Order.objects.create(
-            firstname=firstname,
-            address=address,
-            phonenumber=phonenumber,
-            delivered_at=delivered_at,
-            bunch=bunch
-        )
+            order = Order.objects.create(
+                firstname=firstname,
+                address=address,
+                phonenumber=phonenumber,
+                delivered_at=delivered_at,
+                bunch=bunch
+            )
 
-        response = {
-            'status': 'true',
-            'message': 'Спасибо за заказ, в ближайшее время курьер свяжется с вами',
-            'name': order.bunch.name,
-            'price': order.bunch.price,
-            'image': request.build_absolute_uri(order.bunch.image.url),
-            'description': order.bunch.description,
-            'composition': order.bunch.composition,
-            'bunch_id': order.bunch.id
-        }
-        return JsonResponse(response, status=200)
+            response = {
+                'status': 'true',
+                'message': 'Спасибо за заказ, в ближайшее время курьер свяжется с вами',
+                'name': order.bunch.name,
+                'price': order.bunch.price,
+                'image': request.build_absolute_uri(order.bunch.image.url),
+                'description': order.bunch.description,
+                'composition': order.bunch.composition,
+                'bunch_id': order.bunch.id,
+            }
+            return JsonResponse(response, status=200)
+
+        except:
+            response = {
+                'status': 'false',
+                'message': 'Введены некорректные данные, проверьте формат ввода даты и номера телефона'
+            }
+            return JsonResponse(response, status=501)
 
     response = {
         'status': 'false',
@@ -156,3 +164,26 @@ def send_orders(request) -> JsonResponse:
         status=200,
         json_dumps_params={'ensure_ascii': False}
     )
+
+def send_random_bunch(request) -> JsonResponse:
+    """
+    Отправка случайного букета
+    """
+    bunches = FlowersBunch.objects.all()
+    list_id = []
+    for bunch in bunches:
+        list_id.append(bunch.id)
+    bunch_id = choice(list_id)
+    bunch = FlowersBunch.objects.get(id=bunch_id)
+    response = {
+        'bunch':
+            {
+                'name': bunch.name,
+                'price': bunch.price,
+                'image': request.build_absolute_uri(bunch.image.url),
+                'description': bunch.description,
+                'composition': bunch.composition,
+                'bunch_id': bunch.id
+            }
+    }
+    return JsonResponse(response, status=200)

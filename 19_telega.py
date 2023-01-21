@@ -62,6 +62,9 @@ def start(update, context):
 
 def another_reason(update, context):
     update.message.reply_text('Напишите флористу')
+    url = f"http://127.0.0.1:8000/random_bunch/send/"
+    response = requests.get(url)
+    pprint(response.json())
     return States.MESSAGE_TO_FLORIST
 
 
@@ -210,7 +213,8 @@ def get_delivery_time(update, context):
     }
     response = requests.post(url, data=payload)
     pprint(response.json())
-    # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета
+    # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета, если данные некорректные,
+    # TODO то status false значит надо писать сообщение из джейсона про некорректные данные
     return
 
 
