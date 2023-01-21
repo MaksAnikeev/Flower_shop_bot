@@ -21,10 +21,11 @@ class States(Enum):
     CHOISE_REASON = auto()
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
-    REASON_TO_FLORIST  = auto()
+    REASON_TO_FLORIST = auto()
     MESSAGE_TO_FLORIST = auto()
     MESSAGE_TO_COURIER = auto()
     GET_NAME = auto()
+    GET_BUNCH_ID = auto()
     GET_ADDRESS = auto()
     USER_PHONE_NUMBER = auto()
     GET_DELIVERY_PERIOD = auto()
@@ -177,7 +178,6 @@ def get_answer_from_catalogue(context, random_category=False):
 
 
 def get_bunch(update, context):
-    
     context.user_data['category'] = update.message.text
     response = get_answer_from_catalogue(context)
     if response.ok:
@@ -227,6 +227,8 @@ def get_default_bunch(update, context):
 
 def get_menu_msg(bunch):
 
+
+def get_menu_msg(bunch):
     menu_msg = dedent(f"""\
         <b>{bunch.get('name')}</b>
         <b>Цена {bunch.get('price')} руб</b>
@@ -241,7 +243,6 @@ def get_menu_msg(bunch):
 
 
 def get_choice_bunch(update, context):
-    
     bunch = choice(context.user_data['bunches']['bunch'])
     menu_msg = get_menu_msg(bunch)
     context.user_data["order"] = menu_msg
@@ -270,22 +271,21 @@ def get_choice_bunch(update, context):
 
 
 def show_all_bunches(update, context):
-
     bunches = context.user_data['bunches']      
     for bunch in bunches['bunch']:        
-        menu_msg=get_menu_msg(bunch)   
+        menu_msg = get_menu_msg(bunch)
         bunch_img = requests.get(bunch['image'])        
         update.message.reply_photo(
             bunch_img.content,
             caption=menu_msg,                   
             parse_mode=ParseMode.HTML
             )
-        
     message_keyboard = [
                 [
                     "Флорист",
                     "Заказ"],
-                [    "Другой букет",
+                [
+                    "Другой букет",
                     "Все букеты"]
                 ]       
     markup = ReplyKeyboardMarkup(
@@ -309,15 +309,20 @@ def order(update, context):
 
 def get_name(update, context):
     context.user_data["user_name"] = update.message.text
+    update.message.reply_text('Напишите id понравившегося букета. Он есть в описании букета.')
+    return States.GET_BUNCH_ID
+
+
+def get_bunch_id(update, context):
+    context.user_data["bunch_id"] = update.message.text
     update.message.reply_text('По какому адресу доставить')
     return States.GET_ADDRESS
+
 
 def get_address(update, context):
     context.user_data["address"] = update.message.text
     update.message.reply_text('Введите номер телефона для связи. Номер вводится в формате +7(946)3457687')
     return States.USER_PHONE_NUMBER
-
-# TODO получить от клиента ИД букета
 
 
 def get_user_phone_number(update: Update, context: CallbackContext) -> States:
@@ -364,14 +369,13 @@ def get_delivery_time(update, context):
         'address': context.user_data["address"],
         'phonenumber': context.user_data["phone_number"],
         'delivered_at': context.user_data["delivery_time"],
-        'bunch_id': 3
+        'bunch_id': context.user_data["bunch_id"]
     }
     response = requests.post(url, data=payload)
     pprint(response.json())
     # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета, если данные некорректные,
-    # TODO то status false значит надо писать сообщение из джейсона про некорректные данные
+    # TODO то status false значит надо писать сообщение из джейсона про некорректные данные и давать кнопку начать с ввода имени
     return
-
 
 
 if __name__ == '__main__':
@@ -433,6 +437,11 @@ if __name__ == '__main__':
             States.GET_NAME: [
                 MessageHandler(
                     Filters.text, get_name
+                ),
+            ],
+            States.GET_BUNCH_ID: [
+                MessageHandler(
+                    Filters.text, get_bunch_id
                 ),
             ],
             States.GET_ADDRESS: [
