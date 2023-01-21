@@ -100,7 +100,7 @@ def get_bunch(update, context):
         if not bunches['bunch']:
             update.message.reply_text('Такого букета нет 😥')
         else:
-            bunch = choice (bunches['bunch'])
+            bunch = choice(bunches['bunch'])
 
             menu_msg = dedent(f"""\
                 <b>{bunch.get('name')}</b>
