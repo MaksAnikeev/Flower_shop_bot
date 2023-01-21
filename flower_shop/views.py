@@ -5,8 +5,25 @@ from .models import FlowersBunch, CategoryPrice, Reason, Order
 from random import choice
 
 def index_page(request):
-    context = {}
-    return render(request, 'index.html', context)
+    orders = Order.objects.filter(order_status='raw_order')
+    orders_params = [
+                {
+                    'id': order.id,
+                    'firstname': order.firstname,
+                    'lastname': order.lastname,
+                    'phonenumber': order.phonenumber,
+                    'address': order.address,
+                    'delivered_at': order.delivered_at,
+                    'order_status': order.get_order_status_display(),
+                    'payment': order.get_method_payment_display(),
+                    'order_price': order.bunch.price,
+                    'bunch_name': order.bunch.name,
+                    'comment': order.comment,
+                }
+                for order in orders]
+
+    context = {'order_params': orders_params}
+    return render(request, template_name='index.html', context=context)
 
 
 @csrf_exempt
