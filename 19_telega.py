@@ -112,47 +112,50 @@ def get_bunch(update, context):
 
     if response.ok:
         bunches = response.json()
+        context.user_data['bunches'] = bunches
         if not bunches['bunch']:
-            update.message.reply_text('Такого букета нет 😥')
-        else:
-            bunch = choice(bunches['bunch'])
-
-            menu_msg = dedent(f"""\
-                <b>{bunch.get('name')}</b>
-                <b>Цена {bunch.get('price')} руб</b>
+            update.message.reply_text('Букета по критериям нет😥, начните поиск сначала')
+            return States.CHOISE_CATEGORY
+        get_choice_bunch(update, context)           
+    else:
+        update.message.reply_text('Ошибка соединения, начните поиск сначала 😥')
+    return States.CHOISE_PEOPLE
     
-                <b>Описание</b>
-                {bunch.get('description')}
-                <b>Состав:</b>
-                {bunch.get('composition')}
-                
-                <b>id букета:</b>
-                {bunch.get('bunch_id')}
-                """).replace("    ", "")
 
-            context.user_data["order"] = menu_msg
 
-            message_keyboard = [
+def get_choice_bunch(update, context):
+    
+    bunch = choice(context.user_data['bunches']['bunch'])
+    menu_msg = dedent(f"""\
+        <b>{bunch.get('name')}</b>
+        <b>Цена {bunch.get('price')} руб</b>
+        <b>Описание</b>
+        {bunch.get('description')}
+        <b>Состав:</b>
+        {bunch.get('composition')}
+        <b>id букета:</b>
+        {bunch.get('bunch_id')}
+        """).replace("    ", "")
+    context.user_data["order"] = menu_msg
+    message_keyboard = [
                 [
                     "Флорист",
-                    "Заказ"
+                    "Заказ",
+                    "Другой"
                 ]
             ]
-            markup = ReplyKeyboardMarkup(
+    markup = ReplyKeyboardMarkup(
                 message_keyboard,
                 resize_keyboard=True,
                 one_time_keyboard=True
             )
-            bunch_img = requests.get(bunch['image'])
-            update.message.reply_photo(
-                bunch_img.content,
-                caption=menu_msg,
-                reply_markup=markup,
-                parse_mode=ParseMode.HTML
+    bunch_img = requests.get(bunch['image'])
+    update.message.reply_photo(
+        bunch_img.content,
+        caption=menu_msg,
+        reply_markup=markup,
+        parse_mode=ParseMode.HTML
             )
-    else:
-        update.message.reply_text('Такого букета нет 😥')
-
     return States.CHOISE_PEOPLE
 
 
@@ -244,6 +247,9 @@ if __name__ == '__main__':
                 ),
                 MessageHandler(
                     Filters.text("Заказ"), order
+                ),
+                MessageHandler(
+                    Filters.text("Другой"), get_choice_bunch
                 )
 
             ],
