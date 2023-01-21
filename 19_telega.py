@@ -41,16 +41,9 @@ def call_api(endpoint):
 
 def start(update, context):
     categories = call_api('reasons/send/')['reasons']
-<<<<<<< Updated upstream
-    categories.extend(["Без повода", "Другой повод"])
-    message_keyboard = list(chunked(categories, 2))
-    print(update.message.chat.id)
-
-=======
     categories.extend(["Без повода", "Другой повод", "Курьер"])    
     message_keyboard = list(chunked(categories, 2))
     context.user_data['reasons'] = categories
->>>>>>> Stashed changes
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -114,18 +107,6 @@ def get_bunch(update, context):
     context.user_data['category'] = update.message.text
     response = get_answer_from_catalogue(context)
     if response.ok:
-<<<<<<< Updated upstream
-        bunches = response.json()
-        pprint(bunches)
-        if not bunches['bunch']:
-            update.message.reply_text('Такого букета нет 😥')
-        else:
-            bunch = choice (bunches['bunch'])
-
-            menu_msg = dedent(f"""\
-                <b>{bunch.get('name')}</b>
-                <b>Цена {bunch.get('price')} руб</b>
-=======
         bunches = response.json()        
         if not bunches['bunch']:
             update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')
@@ -137,25 +118,7 @@ def get_bunch(update, context):
         update.message.reply_text('Ошибка соединения, начните поиск сначала 😥')
         return States.CHOISE_CATEGORY
     return States.CHOISE_PEOPLE
->>>>>>> Stashed changes
     
-                <b>Описание</b>
-                {bunch.get('description')}
-                <b>Состав:</b>
-                {bunch.get('composition')}
-                """).replace("    ", "")
-
-<<<<<<< Updated upstream
-            context.user_data["order"] = menu_msg
-
-            message_keyboard = [
-                [
-                    "Флорист",
-                    "Заказ"
-                ]
-            ]
-            markup = ReplyKeyboardMarkup(
-=======
 def get_menu_msg(bunch):
 
     menu_msg = dedent(f"""\
@@ -185,22 +148,20 @@ def get_choice_bunch(update, context):
                 ]            
     
     markup = ReplyKeyboardMarkup(
->>>>>>> Stashed changes
                 message_keyboard,
                 resize_keyboard=True,
                 one_time_keyboard=True
             )
-            bunch_img = requests.get(bunch['image'])
-            update.message.reply_photo(
+    bunch_img = requests.get(bunch['image'])
+    update.message.reply_photo(
                 bunch_img.content,
                 caption=menu_msg,
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
-    else:
-        update.message.reply_text('Такого букета нет 😥')
 
     return States.CHOISE_PEOPLE
+
 
 def show_all_bunches(update, context):
 
@@ -297,15 +258,12 @@ if __name__ == '__main__':
                 ),
                 MessageHandler(
                     Filters.text("Заказ"), order
-<<<<<<< Updated upstream
-=======
                 ),
                 MessageHandler(
                     Filters.text("Другой букет"), get_choice_bunch
                 ),
                  MessageHandler(
                     Filters.text("Все букеты"), show_all_bunches
->>>>>>> Stashed changes
                 )
 
             ],
