@@ -21,6 +21,7 @@ class States(Enum):
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
     MESSAGE_TO_FLORIST = auto()
+    MESSAGE_TO_COURIER = auto()
     GET_NAME = auto()
     GET_ADDRESS = auto()
     GET_DELIVERY_PERIOD = auto()
@@ -41,9 +42,8 @@ def call_api(endpoint):
 
 def start(update, context):
     categories = call_api('reasons/send/')['reasons']
-    categories.extend(["Без повода", "Другой повод"])
+    categories.extend(["Без повода", "Другой повод", "Курьер"])
     message_keyboard = list(chunked(categories, 2))
-    print(update.message.chat.id)
 
     markup = ReplyKeyboardMarkup(
         message_keyboard,
@@ -65,6 +65,22 @@ def message_to_florist(update, context):
     update.message.chat.id = BotData.frorist_chat_id
     menu_msg = update.message.text
     update.message.reply_text(text=menu_msg)
+    return
+
+
+def courier(update, context):
+    update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
+    return States.MESSAGE_TO_COURIER
+
+
+def send_orders_courier(update, context):
+    url = f"http://127.0.0.1:8000/courier/send/"
+    payload = {
+        "delivered_at": update.message.text,
+    }
+    response = requests.post(url, data=payload)
+    response.raise_for_status()
+    pprint(response.json())
     return
 
 
@@ -96,7 +112,6 @@ def get_bunch(update, context):
 
     if response.ok:
         bunches = response.json()
-        pprint(bunches)
         if not bunches['bunch']:
             update.message.reply_text('Такого букета нет 😥')
         else:
@@ -110,6 +125,9 @@ def get_bunch(update, context):
                 {bunch.get('description')}
                 <b>Состав:</b>
                 {bunch.get('composition')}
+                
+                <b>id букета:</b>
+                {bunch.get('bunch_id')}
                 """).replace("    ", "")
 
             context.user_data["order"] = menu_msg
@@ -155,7 +173,7 @@ def get_name(update, context):
 
 def get_address(update, context):
     context.user_data["address"] = update.message.text
-    update.message.reply_text('В какой день и в какое время желаете получить доставку')
+    update.message.reply_text('В какой день и в какое время желаете получить доставку. Напишите дату в формате YYYY-MM-DD HH:MM')
     return States.GET_DELIVERY_PERIOD
 
 def get_delivery_time(update, context):
@@ -168,6 +186,19 @@ def get_delivery_time(update, context):
                 <b>Дата и время доставки: {context.user_data["delivery_time"]}</b>
                 """).replace("    ", "")
     update.message.reply_text(text=menu_msg)
+
+
+
+    url = f"http://127.0.0.1:8000/order/create/"
+    payload = {
+        'firstname': context.user_data["user_name"],
+        'address': context.user_data["address"],
+        'phonenumber': '+79883456554',
+        'delivered_at': context.user_data["delivery_time"],
+        'bunch_id': 3
+    }
+    response = requests.post(url, data=payload)
+    pprint(response.json())
     return
 
 
@@ -183,10 +214,18 @@ if __name__ == '__main__':
         states={
             States.CHOISE_REASON: [
                 MessageHandler(
-                    Filters.text("Другой повод"), another_reason
+                    Filters.text("Другой повод"), another_reason,
+                ),
+                MessageHandler(
+                    Filters.text("Курьер"), courier
                 ),
                 MessageHandler(
                     Filters.text, choise_category
+                ),
+            ],
+            States.MESSAGE_TO_COURIER: [
+                MessageHandler(
+                    Filters.text, send_orders_courier
                 ),
             ],
             States.MESSAGE_TO_FLORIST: [

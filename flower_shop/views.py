@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http.response import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import FlowersBunch, CategoryPrice, Reason
+from .models import FlowersBunch, CategoryPrice, Reason, Order
 
 
 def index_page(request):
@@ -49,6 +49,7 @@ def send_bunch(request) -> JsonResponse:
                     'image': request.build_absolute_uri(bunch.image.url),
                     'description': bunch.description,
                     'composition': bunch.composition,
+                    'bunch_id': bunch.id
                 }
                 for bunch in bunches]
         }
@@ -81,3 +82,77 @@ def send_reasons(request) -> JsonResponse:
         'reasons': [reason.name for reason in reasons]
     }
     return JsonResponse(response, status=200)
+
+
+@csrf_exempt
+def create_order(request) -> JsonResponse:
+    """
+    Создание объекта заказа
+    """
+    if request.method == 'POST':
+        firstname = request.POST.get('firstname')
+        address = request.POST.get('address')
+        phonenumber = request.POST.get('phonenumber')
+        delivered_at = request.POST.get('delivered_at')
+        bunch = FlowersBunch.objects.get(id=request.POST.get('bunch_id'))
+
+        order = Order.objects.create(
+            firstname=firstname,
+            address=address,
+            phonenumber=phonenumber,
+            delivered_at=delivered_at,
+            bunch=bunch
+        )
+
+        response = {
+            'status': 'true',
+            'message': 'Спасибо за заказ, в ближайшее время курьер свяжется с вами',
+            'name': order.bunch.name,
+            'price': order.bunch.price,
+            'image': request.build_absolute_uri(order.bunch.image.url),
+            'description': order.bunch.description,
+            'composition': order.bunch.composition,
+            'bunch_id': order.bunch.id
+        }
+        return JsonResponse(response, status=200)
+
+    response = {
+        'status': 'false',
+        'message': 'Not supported method'
+    }
+    return JsonResponse(response, status=501)
+
+
+@csrf_exempt
+def send_orders(request) -> JsonResponse:
+    """
+    Отправляем заказы курьеру
+    """
+
+    orders = Order.objects.filter(delivered_at__contains=request.POST.get('delivered_at'),
+                                  order_status='raw_order')
+    if orders:
+        response = {
+            'orders': [
+                {
+                    'firstname': order.firstname,
+                    'address': order.address,
+                    'method_payment': order.method_payment,
+                    'comment': order.comment,
+                    # 'phonenumber': order.phonenumber,
+                    'delivered_at': order.delivered_at,
+                    'price': order.bunch.price,
+                    'image': request.build_absolute_uri(order.bunch.image.url),
+                    'bunch_id': order.bunch.id
+                }
+                for order in orders]
+        }
+    else:
+        response = {
+            'message': 'На выбранную дату нет заказов'}
+
+    return JsonResponse(
+        response,
+        status=200,
+        json_dumps_params={'ensure_ascii': False}
+    )

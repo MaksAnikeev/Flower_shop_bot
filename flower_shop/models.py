@@ -1,5 +1,5 @@
 from django.db import models
-# from phonenumber_field.modelfields import PhoneNumberField
+from phonenumber_field.modelfields import PhoneNumberField
 
 
 class Reason(models.Model):
@@ -112,6 +112,7 @@ class Order(models.Model):
         verbose_name='Фамилия',
         max_length=50,
         blank=True,
+        default='',
         db_index=True
     )
 
@@ -120,15 +121,16 @@ class Order(models.Model):
         verbose_name='адрес'
     )
 
-    # phonenumber = PhoneNumberField(
-    #     verbose_name='номер телефона',
-    #     region='RU',
-    #     db_index=True
-    # )
+    phonenumber = PhoneNumberField(
+        verbose_name='номер телефона',
+        region='RU',
+        db_index=True
+    )
 
     comment = models.TextField(
         verbose_name='комментарий к заказу',
         blank=True,
+        default='',
     )
 
     order_status = models.CharField(
@@ -157,6 +159,13 @@ class Order(models.Model):
     delivered_at = models.DateTimeField(
         verbose_name='дата доставки',
         db_index=True
+    )
+
+    bunch = models.ForeignKey(
+        FlowersBunch,
+        related_name='orders',
+        verbose_name="название букета в заказе",
+        on_delete=models.CASCADE,
     )
 
 
