@@ -20,7 +20,7 @@ class OrderPriceAdmin(admin.ModelAdmin):
 @admin.register(FlowersBunch)
 class FlowersBunchAdmin(admin.ModelAdmin):
     model = FlowersBunch
-    list_display = ['name', 'preview', 'price']
+    list_display = ['name', 'preview', 'price', 'reason', 'category']
 
     readonly_fields = ['preview']
 
@@ -30,5 +30,10 @@ class FlowersBunchAdmin(admin.ModelAdmin):
         return format_html('<img src="{url}" style="max-height: 100px;"/>',
                            url=obj.image.url)
 
+    def reason(self, obj):
+        return obj.reason.name
+
+    def category(self, obj):
+        return obj.category.name
 
 
