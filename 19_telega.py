@@ -119,6 +119,7 @@ def get_bunch(update, context):
         get_choice_bunch(update, context)           
     else:
         update.message.reply_text('Ошибка соединения, начните поиск сначала 😥')
+        return States.CHOISE_CATEGORY
     return States.CHOISE_PEOPLE
     
 
