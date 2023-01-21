@@ -1,6 +1,7 @@
 import os
 import requests
 import pprint
+import phonenumbers
 
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot,
                       ReplyKeyboardMarkup, KeyboardButton)
@@ -20,10 +21,12 @@ class States(Enum):
     CHOISE_REASON = auto()
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
+    REASON_TO_FLORIST  = auto()
     MESSAGE_TO_FLORIST = auto()
     MESSAGE_TO_COURIER = auto()
     GET_NAME = auto()
     GET_ADDRESS = auto()
+    USER_PHONE_NUMBER = auto()
     GET_DELIVERY_PERIOD = auto()
 
 class BotData:
@@ -61,17 +64,62 @@ def start(update, context):
 
 
 def another_reason(update, context):
-    update.message.reply_text('Напишите флористу')
-    url = f"http://127.0.0.1:8000/random_bunch/send/"
-    response = requests.get(url)
-    pprint(response.json())
+    update.message.reply_text('Напишите ваш повод и флорист с вами свяжется')
+    return States.REASON_TO_FLORIST
+
+
+def get_phonenumber(update, context):
+    context.user_data['another_reason'] = update.message.text
+    update.message.reply_text('Напишите номер телефона, по которому с вами свяжется флорист.'
+                              ' Номер вводится в формате +7(946)3457687')
     return States.MESSAGE_TO_FLORIST
 
 
 def message_to_florist(update, context):
+    phone_number = phonenumbers.parse(update.message.text, "RU")
+    if not phonenumbers.is_valid_number(phone_number):
+        message_keyboard = [
+            [
+                KeyboardButton(
+                    'Отправить свой номер телефона',
+                    request_contact=True)
+            ]
+        ]
+        markup = ReplyKeyboardMarkup(
+            message_keyboard,
+            one_time_keyboard=True,
+            resize_keyboard=True)
+        error_message = dedent("""\
+            Введенный номер некорректен. Номер вводится в формате +7(946)3457687. Попробуйте снова:
+            """)
+        update.message.reply_text(error_message, reply_markup=markup)
+        return States.MESSAGE_TO_FLORIST
+
+    context.user_data["phone_number"] = update.message.text
+    menu_msg = dedent(f"""\
+            <b>Ваше сообщение отправлено флористу, он свяжется с вами в ближайшее время</b>
+            
+            <b>Повод клиента:</b>
+            {context.user_data['another_reason']}
+            <b>Телефон для связи:</b>
+            {context.user_data["phone_number"]}
+            """).replace("    ", "")
+    update.message.reply_text(
+        text=menu_msg,
+        parse_mode=ParseMode.HTML
+    )
+
     update.message.chat.id = BotData.frorist_chat_id
-    menu_msg = update.message.text
-    update.message.reply_text(text=menu_msg)
+    menu_msg = dedent(f"""\
+        <b>Повод клиента:</b>
+        {context.user_data['another_reason']}
+        <b>Телефон для связи:</b>
+        {context.user_data["phone_number"]}
+        """).replace("    ", "")
+    update.message.reply_text(
+        text=menu_msg,
+        parse_mode=ParseMode.HTML
+        )
     return
 
 # TODO сделать чтобы курьер не видел меню для клиента, а клиент не видел курьера
@@ -185,10 +233,36 @@ def get_name(update, context):
 
 def get_address(update, context):
     context.user_data["address"] = update.message.text
-    update.message.reply_text('В какой день и в какое время желаете получить доставку. Напишите дату в формате YYYY-MM-DD HH:MM')
-    return States.GET_DELIVERY_PERIOD
+    update.message.reply_text('Введите номер телефона для связи. Номер вводится в формате +7(946)3457687')
+    return States.USER_PHONE_NUMBER
 
 # TODO получить от клиента ИД букета
+
+
+def get_user_phone_number(update: Update, context: CallbackContext) -> States:
+    phone_number = phonenumbers.parse(update.message.text, "RU")
+    if not phonenumbers.is_valid_number(phone_number):
+        message_keyboard = [
+            [
+                KeyboardButton(
+                    'Отправить свой номер телефона',
+                    request_contact=True)
+            ]
+        ]
+        markup = ReplyKeyboardMarkup(
+            message_keyboard,
+            one_time_keyboard=True,
+            resize_keyboard=True)
+        error_message = dedent("""\
+        Введенный номер некорректен. Номер вводится в формате +7(946)3457687'. Попробуйте снова:
+        """)
+        update.message.reply_text(error_message, reply_markup=markup)
+        return States.USER_PHONE_NUMBER
+    context.user_data["phone_number"] = update.message.text
+    update.message.reply_text(
+        'В какой день и в какое время желаете получить доставку. Напишите дату в формате YYYY-MM-DD HH:MM')
+    return States.GET_DELIVERY_PERIOD
+
 
 def get_delivery_time(update, context):
     context.user_data["delivery_time"] = update.message.text
@@ -207,7 +281,7 @@ def get_delivery_time(update, context):
     payload = {
         'firstname': context.user_data["user_name"],
         'address': context.user_data["address"],
-        'phonenumber': '+79883456554',
+        'phonenumber': context.user_data["phone_number"],
         'delivered_at': context.user_data["delivery_time"],
         'bunch_id': 3
     }
@@ -216,6 +290,7 @@ def get_delivery_time(update, context):
     # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета, если данные некорректные,
     # TODO то status false значит надо писать сообщение из джейсона про некорректные данные
     return
+
 
 
 if __name__ == '__main__':
@@ -242,6 +317,11 @@ if __name__ == '__main__':
             States.MESSAGE_TO_COURIER: [
                 MessageHandler(
                     Filters.text, send_orders_courier
+                ),
+            ],
+            States.REASON_TO_FLORIST: [
+                MessageHandler(
+                    Filters.text, get_phonenumber
                 ),
             ],
             States.MESSAGE_TO_FLORIST: [
@@ -274,6 +354,11 @@ if __name__ == '__main__':
             States.GET_ADDRESS: [
                 MessageHandler(
                     Filters.text, get_address
+                ),
+            ],
+            States.USER_PHONE_NUMBER: [
+                MessageHandler(
+                    Filters.text, get_user_phone_number
                 ),
             ],
             States.GET_DELIVERY_PERIOD: [

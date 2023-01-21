@@ -147,7 +147,7 @@ def send_orders(request) -> JsonResponse:
                     'address': order.address,
                     'method_payment': order.method_payment,
                     'comment': order.comment,
-                    # 'phonenumber': order.phonenumber,
+                    'phonenumber': str(order.phonenumber),
                     'delivered_at': order.delivered_at,
                     'price': order.bunch.price,
                     'image': request.build_absolute_uri(order.bunch.image.url),
