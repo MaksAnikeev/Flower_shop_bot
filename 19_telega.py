@@ -32,6 +32,10 @@ class BotData:
     # frorist_chat_id = 5432002795
     # courier_chat_id = 5432002795
 
+# TODO сделать использование этой функции во всех запросах
+# TODO пройтись по боту и посмотреть чтобы везде были кнопки назад или оформить заказ, чтобы клиент не оставался без кнопки
+# TODO рассказать Максу как сделать чтобы бот отправлял сообщения в другой чат или бота, а то просто смена chat_id не решает задачу
+
 
 def call_api(endpoint):
     url = f"http://127.0.0.1:8000/{endpoint}"
@@ -67,7 +71,7 @@ def message_to_florist(update, context):
     update.message.reply_text(text=menu_msg)
     return
 
-
+# TODO сделать чтобы курьер не видел меню для клиента, а клиент не видел курьера
 def courier(update, context):
     update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
     return States.MESSAGE_TO_COURIER
@@ -81,6 +85,7 @@ def send_orders_courier(update, context):
     response = requests.post(url, data=payload)
     response.raise_for_status()
     pprint(response.json())
+    # TODO взять инфу с джейсона и прислать курьеру заказы
     return
 
 
@@ -180,6 +185,8 @@ def get_address(update, context):
     update.message.reply_text('В какой день и в какое время желаете получить доставку. Напишите дату в формате YYYY-MM-DD HH:MM')
     return States.GET_DELIVERY_PERIOD
 
+# TODO получить от клиента ИД букета
+
 def get_delivery_time(update, context):
     context.user_data["delivery_time"] = update.message.text
     update.message.reply_text('Спасибо за заказ, в ближайшее время курьер свяжется с вами')
@@ -191,7 +198,7 @@ def get_delivery_time(update, context):
                 """).replace("    ", "")
     update.message.reply_text(text=menu_msg)
 
-
+    # TODO сначала отправляем запрос и создаем объект и все сообщения подтверждения заказа уже берем из джейона
 
     url = f"http://127.0.0.1:8000/order/create/"
     payload = {
@@ -203,6 +210,7 @@ def get_delivery_time(update, context):
     }
     response = requests.post(url, data=payload)
     pprint(response.json())
+    # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета
     return
 
 
