@@ -30,6 +30,7 @@ class States(Enum):
     GET_ADDRESS = auto()
     USER_PHONE_NUMBER = auto()
     GET_DELIVERY_PERIOD = auto()
+    CONFIRM_ORDER = auto()
 
 class BotData:
     FLORIST_CHAT_ID = 5432002795
@@ -296,6 +297,7 @@ def get_choice_bunch(update, context):
                 one_time_keyboard=True
             )
     bunch_img = requests.get(bunch['image'])
+    print(bunch['image'])
     update.message.reply_photo(
                 bunch_img.content,
                 caption=menu_msg,
@@ -388,16 +390,8 @@ def get_user_phone_number(update: Update, context: CallbackContext) -> States:
 
 def get_delivery_time(update, context):
     context.user_data["delivery_time"] = update.message.text
-    update.message.reply_text('Спасибо за заказ, в ближайшее время курьер свяжется с вами')
-    update.message.chat.id = BotData.courier_chat_id
-    menu_msg = dedent(f"""\
-                <b>Имя клиента: {context.user_data["user_name"]}</b>
-                <b>Адрес: {context.user_data["address"]} </b>
-                <b>Дата и время доставки: {context.user_data["delivery_time"]}</b>
-                """).replace("    ", "")
-    update.message.reply_text(text=menu_msg)
-
-    # TODO сначала отправляем запрос и создаем объект и все сообщения подтверждения заказа уже берем из джейона
+    update.message.reply_text('Пожалуйста, проверьте детали заказа')
+        # TODO сначала отправляем запрос и создаем объект и все сообщения подтверждения заказа уже берем из джейона
 
     url = f"http://127.0.0.1:8000/order/create/"
     payload = {
@@ -409,9 +403,48 @@ def get_delivery_time(update, context):
     }
     response = requests.post(url, data=payload)
     pprint(response.json())
+    order = response.json()
+
+    message_keyboard = [
+        [
+            "Все верно",
+            "В заказе ошибка"],
+    ]
+
+
+    markup = ReplyKeyboardMarkup(
+        message_keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    menu_msg = dedent(f"""\
+                        <b>Вы выбрали букет №:</b>
+                        {order['bunch_id']}
+                        <b>Состав букета:</b>
+                        {order['composition']}
+                        <b>Описание:</b>
+                        {order['description']}
+                        <b>Название:</b>
+                        {order['name']}
+                        <b>Цена:</b>
+                        {order['price']}
+                        """).replace("    ", "")
+
+    bunch_img = requests.get(order['image'])
+    update.message.reply_photo(
+        bunch_img.content,
+        caption=menu_msg,
+        reply_markup=markup,
+        parse_mode=ParseMode.HTML
+    )
     # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета, если данные некорректные,
     # TODO то status false значит надо писать сообщение из джейсона про некорректные данные и давать кнопку начать с ввода имени
-    return
+    return States.CONFIRM_ORDER
+
+
+def order_confirmed(update, context):
+    update.message.reply_text(
+        'Спасибо за заказ, в ближайшее время курьер свяжется с вами')
 
 
 if __name__ == '__main__':
@@ -495,6 +528,14 @@ if __name__ == '__main__':
                     Filters.text, get_delivery_time
                 ),
             ],
+            States.CONFIRM_ORDER: [
+                MessageHandler(
+                    Filters.text("Все верно"), order_confirmed
+                ),
+                MessageHandler(
+                    Filters.text("В заказе ошибка"), start
+                ),
+            ]
 
         },
         fallbacks=[],
