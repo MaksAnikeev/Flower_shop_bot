@@ -125,7 +125,7 @@ def message_to_florist(update, context):
 
 # TODO сделать чтобы курьер не видел меню для клиента, а клиент не видел курьера
 def courier(update, context):
-    update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
+    update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD')
     return States.MESSAGE_TO_COURIER
 
 
