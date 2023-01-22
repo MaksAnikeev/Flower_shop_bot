@@ -31,6 +31,7 @@ class States(Enum):
     GET_ADDRESS = auto()
     USER_PHONE_NUMBER = auto()
     GET_DELIVERY_PERIOD = auto()
+    CONFIRM_ORDER = auto()
 
 class BotData:
     FLORIST_CHAT_ID = 704859099
@@ -363,7 +364,8 @@ def get_delivery_time(update, context):
     }
     response = requests.post(url, data=payload)
     order = response.json()
-
+    context.user_data["order_id_delete"] = order['order_id']
+    print(order['order_id'])
     message_keyboard = [
         [
             "Все верно",
@@ -402,6 +404,18 @@ def get_delivery_time(update, context):
 def order_confirmed(update, context):
     update.message.reply_text(
         'Спасибо за заказ, в ближайшее время курьер свяжется с вами')
+
+def order_delete(update, context):
+    url = "http://127.0.0.1:8000/order/delete/"
+    payload = {
+        'order_id': context.user_data["order_id_delete"],
+    }
+    response = requests.post(url, data=payload)
+    answer = response.json()
+    pprint(answer)
+    update.message.reply_text(answer['message'])
+    return States.GET_NAME
+
 
 
 if __name__ == '__main__':
@@ -487,7 +501,14 @@ if __name__ == '__main__':
                     Filters.text, get_delivery_time
                 ),
             ],
-
+            States.CONFIRM_ORDER: [
+                MessageHandler(
+                    Filters.text("Все верно"), order_confirmed
+                ),
+                MessageHandler(
+                    Filters.text("В заказе ошибка"), order_delete
+                ),
+            ],
         },
         fallbacks=[],
         allow_reentry=True,

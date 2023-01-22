@@ -132,6 +132,7 @@ def create_order(request) -> JsonResponse:
                 'description': order.bunch.description,
                 'composition': order.bunch.composition,
                 'bunch_id': order.bunch.id,
+                'order_id': order.id,
             }
             return JsonResponse(response, status=200)
 
@@ -169,7 +170,7 @@ def send_orders(request) -> JsonResponse:
                     'delivered_at': order.delivered_at,
                     'price': order.bunch.price,
                     'image': request.build_absolute_uri(order.bunch.image.url),
-                    'bunch_id': order.bunch.id
+                    'bunch_id': order.bunch.id,
                 }
                 for order in orders]
         }
@@ -204,4 +205,16 @@ def send_random_bunch(request) -> JsonResponse:
                 'bunch_id': bunch.id
             }
     }
+    return JsonResponse(response, status=200)
+
+@csrf_exempt
+def remove_order(request) -> JsonResponse:
+    """
+    Удаление заказа
+    """
+    order_id = request.POST.get('order_id')
+    order = Order.objects.get(id=order_id )
+    order.delete()
+    response = {
+        'message': 'Тогда давайте заполним заново. Нажмите любую кнопку'}
     return JsonResponse(response, status=200)

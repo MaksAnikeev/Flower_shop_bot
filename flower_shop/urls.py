@@ -1,7 +1,7 @@
 from django.urls import path
 
 from .views import index_page, send_bunch, send_categories, send_reasons, \
-    create_order, send_orders, send_random_bunch
+    create_order, send_orders, send_random_bunch, remove_order
 
 app_name = "flower_shop"
 
@@ -13,4 +13,5 @@ urlpatterns = [
     path('order/create/', create_order),
     path('courier/send/', send_orders),
     path('random_bunch/send/', send_random_bunch),
+    path('order/delete/', remove_order),
 ]
