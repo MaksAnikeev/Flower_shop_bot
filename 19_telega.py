@@ -16,9 +16,11 @@ from textwrap import dedent
 from more_itertools import chunked
 from enum import Enum, auto
 from random import choice
+from time import sleep
 
 
 class States(Enum):
+    START = auto()
     CHOISE_REASON = auto()
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
@@ -65,13 +67,18 @@ def start(update, context):
     context.user_data['reasons'] = reasons
     reasons.extend(["Без повода", "Другой повод"])
     message_keyboard = list(chunked(reasons, 2))
+    greeting_msg = '''Закажите доставку праздничного букета,
+собранного специально для ваших любимых, родных и коллег.
+Наш букет со смыслом станет главным подарком на вашем празднике!'''
+    update.message.reply_text(text=greeting_msg, )
+    sleep(2)
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
         one_time_keyboard=True
     )
     menu_msg = 'К какому событию готовимся? Выберите один из вариантов, либо укажите свой'
-    
+
     update.message.reply_text(text=menu_msg, reply_markup=markup)
     return States.CHOISE_REASON
 
@@ -111,7 +118,7 @@ def message_to_florist(update, context):
     context.user_data["phone_number"] = update.message.text
     menu_msg = dedent(f"""\
             <b>Ваше сообщение отправлено флористу, он свяжется с вами в ближайшее время</b>
-            
+
             <b>Повод клиента:</b>
             {context.user_data['another_reason']}
             <b>Телефон для связи:</b>
@@ -204,7 +211,7 @@ def get_answer_from_catalogue(context, random_category=False):
     payload = {
         "category": context.user_data['category'],
         "reason": context.user_data['reason'],
-    } 
+    }
     url = "http://127.0.0.1:8000/bunch/send/"
     response = requests.post(url, data=payload)
     if random_category:
@@ -221,12 +228,12 @@ def get_bunch(update, context):
     context.user_data['category'] = update.message.text
     response = get_answer_from_catalogue(context)
     if response.ok:
-        bunches = response.json()        
+        bunches = response.json()
         if not bunches['bunch']:
             get_default_bunch(update, context)
-            return States.CHOISE_PEOPLE
+            return States.START
         context.user_data['bunches'] = bunches
-        get_choice_bunch(update, context)           
+        get_choice_bunch(update, context)
     else:
         update.message.reply_text('Ошибка соединения, начните поиск сначала 😥')
         return States.CHOISE_CATEGORY
@@ -235,7 +242,7 @@ def get_bunch(update, context):
 
 def get_default_bunch(update, context):
 
-    update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')    
+    update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')
     url = "http://127.0.0.1:8000/random_bunch/send/"
     response = requests.get(url)
     print(response)
@@ -247,10 +254,10 @@ def get_default_bunch(update, context):
                 [
                     "Флорист",
                     "Заказ"],
-                #[    "Другой букет",
+                [   "Задать другие параметры"],
                 #    "Все букеты"]
-                ]            
-    
+                ]
+
     markup = ReplyKeyboardMarkup(
                 message_keyboard,
                 resize_keyboard=True,
@@ -263,6 +270,7 @@ def get_default_bunch(update, context):
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
+    return States.START
 
 
 def get_menu_msg(bunch):
@@ -289,8 +297,8 @@ def get_choice_bunch(update, context):
                     "Заказ"],
                 [    "Другой букет",
                     "Все букеты"]
-                ]            
-    
+                ]
+
     markup = ReplyKeyboardMarkup(
                 message_keyboard,
                 resize_keyboard=True,
@@ -309,13 +317,13 @@ def get_choice_bunch(update, context):
 
 
 def show_all_bunches(update, context):
-    bunches = context.user_data['bunches']      
-    for bunch in bunches['bunch']:        
+    bunches = context.user_data['bunches']
+    for bunch in bunches['bunch']:
         menu_msg = get_menu_msg(bunch)
-        bunch_img = requests.get(bunch['image'])        
+        bunch_img = requests.get(bunch['image'])
         update.message.reply_photo(
             bunch_img.content,
-            caption=menu_msg,                   
+            caption=menu_msg,
             parse_mode=ParseMode.HTML
             )
     message_keyboard = [
@@ -325,7 +333,7 @@ def show_all_bunches(update, context):
                 [
                     "Другой букет",
                     "Все букеты"]
-                ]       
+                ]
     markup = ReplyKeyboardMarkup(
                 message_keyboard,
                 resize_keyboard=True,
@@ -457,6 +465,11 @@ if __name__ == '__main__':
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            States.START: [
+                MessageHandler(
+                    Filters.text, start_over
+                ),
+            ],
             States.CHOISE_REASON: [
                 MessageHandler(
                     Filters.text("Другой повод"), another_reason,

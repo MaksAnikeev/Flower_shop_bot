@@ -18,6 +18,7 @@ def index_page(request):
                     'payment': order.get_method_payment_display(),
                     'order_price': order.bunch.price,
                     'bunch_name': order.bunch.name,
+                    'bunch_id': order.bunch.id,
                     'comment': order.comment,
                 }
                 for order in orders]
