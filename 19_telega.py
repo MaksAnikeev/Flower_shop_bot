@@ -15,9 +15,11 @@ from textwrap import dedent
 from more_itertools import chunked
 from enum import Enum, auto
 from random import choice
+from time import sleep
 
 
 class States(Enum):
+    START = auto()
     CHOISE_REASON = auto()
     CHOISE_CATEGORY = auto()
     CHOISE_PEOPLE = auto()
@@ -52,7 +54,28 @@ def start(update, context):
     categories = call_api('reasons/send/')['reasons']
     context.user_data['reasons'] = categories
     categories.extend(["Без повода", "Другой повод", "Курьер"])    
-    message_keyboard = list(chunked(categories, 2))    
+    message_keyboard = list(chunked(categories, 2))   
+    greeting_msg = '''Закажите доставку праздничного букета, 
+собранного специально для ваших любимых, родных и коллег.
+Наш букет со смыслом станет главным подарком на вашем празднике!'''     
+    update.message.reply_text(text=greeting_msg, )
+    sleep(2)
+    markup = ReplyKeyboardMarkup(
+        message_keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True
+    )
+    menu_msg = 'К какому событию готовимся? Выберите один из вариантов, либо укажите свой'
+    
+    update.message.reply_text(text=menu_msg, reply_markup=markup)
+    return States.CHOISE_REASON
+
+
+def start_over(update, context):
+    categories = call_api('reasons/send/')['reasons']
+    context.user_data['reasons'] = categories
+    categories.extend(["Без повода", "Другой повод", "Курьер"])    
+    message_keyboard = list(chunked(categories, 2))      
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -184,7 +207,7 @@ def get_bunch(update, context):
         bunches = response.json()        
         if not bunches['bunch']:
             get_default_bunch(update, context)
-            return States.CHOISE_PEOPLE
+            return States.START
         context.user_data['bunches'] = bunches
         get_choice_bunch(update, context)           
     else:
@@ -207,7 +230,7 @@ def get_default_bunch(update, context):
                 [
                     "Флорист",
                     "Заказ"],
-                #[    "Другой букет",
+                [   "Задать другие параметры"],
                 #    "Все букеты"]
                 ]            
     
@@ -223,6 +246,7 @@ def get_default_bunch(update, context):
                 reply_markup=markup,
                 parse_mode=ParseMode.HTML
             )
+    return States.START
 
 
 def get_menu_msg(bunch):
@@ -385,6 +409,11 @@ if __name__ == '__main__':
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            States.START: [
+                MessageHandler(
+                    Filters.text, start_over
+                ),        
+            ],
             States.CHOISE_REASON: [
                 MessageHandler(
                     Filters.text("Другой повод"), another_reason,
@@ -394,7 +423,7 @@ if __name__ == '__main__':
                 ),
                 MessageHandler(
                     Filters.text, choise_category
-                ),
+                ),                
             ],
             States.MESSAGE_TO_COURIER: [
                 MessageHandler(
