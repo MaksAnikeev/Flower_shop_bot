@@ -2,6 +2,7 @@ import os
 import requests
 import pprint
 import phonenumbers
+import datetime
 
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot,
                       ReplyKeyboardMarkup, KeyboardButton)
@@ -31,8 +32,10 @@ class States(Enum):
     GET_DELIVERY_PERIOD = auto()
 
 class BotData:
-    frorist_chat_id = 704859099
-    courier_chat_id = 704859099
+    FLORIST_CHAT_ID = 5432002795
+    COURIER_CHAT_ID = 5432002795
+    # frorist_chat_id = 704859099
+    # courier_chat_id = 704859099
     # frorist_chat_id = 5432002795
     # courier_chat_id = 5432002795
 
@@ -49,10 +52,18 @@ def call_api(endpoint):
 
 
 def start(update, context):
-    categories = call_api('reasons/send/')['reasons']
-    context.user_data['reasons'] = categories
-    categories.extend(["Без повода", "Другой повод", "Курьер"])    
-    message_keyboard = list(chunked(categories, 2))    
+    if update.message.chat.id == BotData.COURIER_CHAT_ID:
+
+        update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
+
+        return States.MESSAGE_TO_COURIER
+
+
+    print('we go on with client')
+    reasons = call_api('reasons/send/')['reasons']
+    context.user_data['reasons'] = reasons
+    reasons.extend(["Без повода", "Другой повод"])
+    message_keyboard = list(chunked(reasons, 2))
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -110,34 +121,62 @@ def message_to_florist(update, context):
         parse_mode=ParseMode.HTML
     )
 
-    update.message.chat.id = BotData.frorist_chat_id
-    menu_msg = dedent(f"""\
-        <b>Повод клиента:</b>
-        {context.user_data['another_reason']}
-        <b>Телефон для связи:</b>
-        {context.user_data["phone_number"]}
-        """).replace("    ", "")
-    update.message.reply_text(
-        text=menu_msg,
-        parse_mode=ParseMode.HTML
-        )
+    # update.message.chat.id = BotData.frorist_chat_id
+    # menu_msg = dedent(f"""\
+    #     <b>Повод клиента:</b>
+    #     {context.user_data['another_reason']}
+    #     <b>Телефон для связи:</b>
+    #     {context.user_data["phone_number"]}
+    #     """).replace("    ", "")
+    # update.message.reply_text(
+    #     text=menu_msg,
+    #     parse_mode=ParseMode.HTML
+    #     )
     return
 
 # TODO сделать чтобы курьер не видел меню для клиента, а клиент не видел курьера
-def courier(update, context):
-    update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
-    return States.MESSAGE_TO_COURIER
+# def courier(update, context):
+#     update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
+#     return States.MESSAGE_TO_COURIER
 
 
 def send_orders_courier(update, context):
     url = f"http://127.0.0.1:8000/courier/send/"
+    today = datetime.datetime.now().date
+    print(today)
     payload = {
         "delivered_at": update.message.text,
     }
     response = requests.post(url, data=payload)
     response.raise_for_status()
     pprint(response.json())
-    # TODO взять инфу с джейсона и прислать курьеру заказы
+    orders = response.json()['orders']
+    update.message.chat.id = BotData.COURIER_CHAT_ID
+
+    for order in orders:
+
+        menu_msg = dedent(f"""\
+                    <b>Адрес:</b>
+                    {order['address']}
+                    <b>Время доставки:</b>
+                    {order['delivered_at']}
+                    <b>Контактное лицо:</b>
+                    {order['firstname']}
+                    <b>Тип оплаты:</b>
+                    {order['method_payment']}
+                    <b>Телефон:</b>
+                    {order['phonenumber']}
+                    <b>ID букета:</b>
+                    {order['bunch_id']}
+                    <b>Цена:</b>
+                    {order['price']}
+                    <b>Комментарий:</b>
+                    {order['comment']}
+                    """).replace("    ", "")
+        update.message.reply_text(
+            text=menu_msg,
+            parse_mode=ParseMode.HTML
+        )
     return
 
 
@@ -389,9 +428,9 @@ if __name__ == '__main__':
                 MessageHandler(
                     Filters.text("Другой повод"), another_reason,
                 ),
-                MessageHandler(
-                    Filters.text("Курьер"), courier
-                ),
+                # MessageHandler(
+                #     Filters.text("Курьер"), courier
+                # ),
                 MessageHandler(
                     Filters.text, choise_category
                 ),
