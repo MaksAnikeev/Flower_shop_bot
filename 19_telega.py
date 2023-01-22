@@ -349,7 +349,7 @@ def show_all_bunches(update, context):
 
 def florist(update, context):
     update.message.reply_text('Напишите флористу')
-    return States.MESSAGE_TO_FLORIST
+    return States.REASON_TO_FLORIST
 
 
 def order(update, context):
