@@ -216,5 +216,5 @@ def remove_order(request) -> JsonResponse:
     order = Order.objects.get(id=order_id )
     order.delete()
     response = {
-        'message': 'Тогда давайте заполним заново. Нажмите любую кнопку'}
+        'message': 'Тогда давайте заполним заново. Введите ваше имя'}
     return JsonResponse(response, status=200)
