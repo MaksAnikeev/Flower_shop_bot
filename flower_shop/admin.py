@@ -2,21 +2,10 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import HttpResponseRedirect
-from adminsortable2.admin import SortableAdminBase, SortableStackedInline
+
 
 from .models import Reason, CategoryPrice, FlowersBunch, Order
 
-# class FlowersBunchTabularInline(SortableStackedInline):
-#     model = FlowersBunch
-#     fields = ['name', 'price', 'preview', ]
-#     ordering = ['name']
-#     readonly_fields = ['preview']
-#
-#     def preview(self, obj):
-#         if not obj.image:
-#             return 'нет картинки'
-#         return format_html('<img src="{url}" style="max-height: 100px;"/>',
-#                            url=obj.image.url)
 
 class FlowersBunchTabularInline(admin.TabularInline):
     model = FlowersBunch
