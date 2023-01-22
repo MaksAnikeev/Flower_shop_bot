@@ -217,13 +217,10 @@ def get_bunch(update, context):
 
 
 def get_default_bunch(update, context):
-
-    update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')    
+    update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')
     url = "http://127.0.0.1:8000/random_bunch/send/"
     response = requests.get(url)
-    print(response)
     bunch = response.json()['bunch']
-    print(bunch)
     menu_msg = get_menu_msg(bunch)
     context.user_data["order"] = menu_msg
     message_keyboard = [
@@ -231,8 +228,7 @@ def get_default_bunch(update, context):
                     "Флорист",
                     "Заказ"],
                 [   "Задать другие параметры"],
-                #    "Все букеты"]
-                ]            
+                ]
     
     markup = ReplyKeyboardMarkup(
                 message_keyboard,
