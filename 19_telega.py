@@ -35,16 +35,10 @@ class States(Enum):
     CONFIRM_ORDER = auto()
 
 class BotData:
-    FLORIST_CHAT_ID = 5432002795
+    FLORIST_CHAT_ID = 704859099
     COURIER_CHAT_ID = 5432002795
     # frorist_chat_id = 704859099
     # courier_chat_id = 704859099
-    # frorist_chat_id = 5432002795
-    # courier_chat_id = 5432002795
-
-# TODO сделать использование этой функции во всех запросах
-# TODO пройтись по боту и посмотреть чтобы везде были кнопки назад или оформить заказ, чтобы клиент не оставался без кнопки
-# TODO рассказать Максу как сделать чтобы бот отправлял сообщения в другой чат или бота, а то просто смена chat_id не решает задачу
 
 
 def call_api(endpoint):
@@ -56,9 +50,7 @@ def call_api(endpoint):
 
 def greeting(update, context):
     if update.message.chat.id == BotData.COURIER_CHAT_ID:
-
-        update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
-
+        update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD')
         return States.MESSAGE_TO_COURIER
 
     greeting_msg = '''Закажите доставку праздничного букета,
@@ -66,11 +58,11 @@ def greeting(update, context):
     Наш букет со смыслом станет главным подарком на вашем празднике!'''
     update.message.reply_text(text=greeting_msg)
     sleep(2)
-    start(update, context)
+    update.message.reply_text(text='Для продолжения нажми любую клавишу')
+    return States.START
 
 
 def start(update, context):
-
     reasons = call_api('reasons/send/')['reasons']
     context.user_data['reasons'] = reasons
     reasons.extend(["Без повода", "Другой повод"])
@@ -132,30 +124,23 @@ def message_to_florist(update, context):
         text=menu_msg,
         parse_mode=ParseMode.HTML
     )
-
-    # update.message.chat.id = BotData.frorist_chat_id
-    # menu_msg = dedent(f"""\
-    #     <b>Повод клиента:</b>
-    #     {context.user_data['another_reason']}
-    #     <b>Телефон для связи:</b>
-    #     {context.user_data["phone_number"]}
-    #     """).replace("    ", "")
-    # update.message.reply_text(
-    #     text=menu_msg,
-    #     parse_mode=ParseMode.HTML
-    #     )
+    update.message.chat.id = BotData.FLORIST_CHAT_ID
+    menu_msg = dedent(f"""\
+            это видит флорист
+            <b>Повод клиента:</b>
+            {context.user_data['another_reason']}
+            <b>Телефон для связи:</b>
+            {context.user_data["phone_number"]}
+            """).replace("    ", "")
+    update.message.reply_text(
+        text=menu_msg,
+        parse_mode=ParseMode.HTML
+    )
     return
-
-# TODO сделать чтобы курьер не видел меню для клиента, а клиент не видел курьера
-# def courier(update, context):
-#     update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
-#     return States.MESSAGE_TO_COURIER
 
 
 def send_orders_courier(update, context):
     url = f"http://127.0.0.1:8000/courier/send/"
-    today = datetime.datetime.now().date
-    print(today)
     payload = {
         "delivered_at": update.message.text,
     }
@@ -193,6 +178,7 @@ def send_orders_courier(update, context):
 
 
 def choise_category(update, context):
+    print('здесь')
     url = f"http://127.0.0.1:8000/categories/send/"
     response = requests.get(url)
     categories = response.json()['categories']
@@ -216,16 +202,14 @@ def get_answer_from_catalogue(context, random_category=False):
         "category": context.user_data['category'],
         "reason": context.user_data['reason'],
     }
+    print('Здесь')
     url = "http://127.0.0.1:8000/bunch/send/"
     response = requests.post(url, data=payload)
     if random_category:
         url = "http://127.0.0.1:8000/random_bunch/send/"
         response = requests.post(url)
     response.raise_for_status()
-    return  response
-
-
-
+    return response
 
 
 def get_bunch(update, context):
@@ -249,9 +233,7 @@ def get_default_bunch(update, context):
     update.message.reply_text('Букета по критериям нет😥, выводится случайный букет')
     url = "http://127.0.0.1:8000/random_bunch/send/"
     response = requests.get(url)
-    print(response)
     bunch = response.json()['bunch']
-    print(bunch)
     menu_msg = get_menu_msg(bunch)
     context.user_data["order"] = menu_msg
     message_keyboard = [
@@ -259,7 +241,6 @@ def get_default_bunch(update, context):
                     "Флорист",
                     "Заказ"],
                 [   "Задать другие параметры"],
-                #    "Все букеты"]
                 ]
 
     markup = ReplyKeyboardMarkup(
@@ -309,7 +290,6 @@ def get_choice_bunch(update, context):
                 one_time_keyboard=True
             )
     bunch_img = requests.get(bunch['image'])
-    print(bunch['image'])
     update.message.reply_photo(
                 bunch_img.content,
                 caption=menu_msg,
@@ -403,8 +383,6 @@ def get_user_phone_number(update: Update, context: CallbackContext) -> States:
 def get_delivery_time(update, context):
     context.user_data["delivery_time"] = update.message.text
     update.message.reply_text('Пожалуйста, проверьте детали заказа')
-        # TODO сначала отправляем запрос и создаем объект и все сообщения подтверждения заказа уже берем из джейона
-
     url = f"http://127.0.0.1:8000/order/create/"
     payload = {
         'firstname': context.user_data["user_name"],
@@ -414,7 +392,6 @@ def get_delivery_time(update, context):
         'bunch_id': context.user_data["bunch_id"]
     }
     response = requests.post(url, data=payload)
-    pprint(response.json())
     order = response.json()
 
     message_keyboard = [
@@ -449,8 +426,6 @@ def get_delivery_time(update, context):
         reply_markup=markup,
         parse_mode=ParseMode.HTML
     )
-    # TODO из джейсона отправить клиенту описание его заказа, фото и описание его букета, если данные некорректные,
-    # TODO то status false значит надо писать сообщение из джейсона про некорректные данные и давать кнопку начать с ввода имени
     return States.CONFIRM_ORDER
 
 
@@ -478,9 +453,6 @@ if __name__ == '__main__':
                 MessageHandler(
                     Filters.text("Другой повод"), another_reason,
                 ),
-                # MessageHandler(
-                #     Filters.text("Курьер"), courier
-                # ),
                 MessageHandler(
                     Filters.text, choise_category
                 ),
