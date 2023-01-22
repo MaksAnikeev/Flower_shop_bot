@@ -54,24 +54,28 @@ def call_api(endpoint):
     return response.json()
 
 
-def start(update, context):
+def greeting(update, context):
     if update.message.chat.id == BotData.COURIER_CHAT_ID:
 
         update.message.reply_text('Напишите дату на которую хотите посмотреть заказы в формате YYYY-MM-DD HH:MM')
 
         return States.MESSAGE_TO_COURIER
 
+    greeting_msg = '''Закажите доставку праздничного букета,
+    собранного специально для ваших любимых, родных и коллег.
+    Наш букет со смыслом станет главным подарком на вашем празднике!'''
+    update.message.reply_text(text=greeting_msg)
+    sleep(2)
+    start(update, context)
 
-    print('we go on with client')
+
+def start(update, context):
+
     reasons = call_api('reasons/send/')['reasons']
     context.user_data['reasons'] = reasons
     reasons.extend(["Без повода", "Другой повод"])
     message_keyboard = list(chunked(reasons, 2))
-    greeting_msg = '''Закажите доставку праздничного букета,
-собранного специально для ваших любимых, родных и коллег.
-Наш букет со смыслом станет главным подарком на вашем празднике!'''
-    update.message.reply_text(text=greeting_msg, )
-    sleep(2)
+
     markup = ReplyKeyboardMarkup(
         message_keyboard,
         resize_keyboard=True,
@@ -463,11 +467,11 @@ if __name__ == '__main__':
     dispatcher = updater.dispatcher
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler("start", greeting)],
         states={
             States.START: [
                 MessageHandler(
-                    Filters.text, start_over
+                    Filters.text, start
                 ),
             ],
             States.CHOISE_REASON: [
