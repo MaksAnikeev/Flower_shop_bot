@@ -47,6 +47,7 @@
       <th>Статус заказа</th>
       <th>Способ оплаты</th>
       <th>Букет</th>
+      <th>id букета</th>
       <th>Стоимость букета</th>
       <th>Комментарии</th>
       <th>Ссылка на админку</th>
@@ -63,6 +64,7 @@
         <td>{{item.order_status}}</td>
         <td>{{item.payment}}</td>
         <td>{{item.bunch_name}}</td>
+        <td>{{item.bunch_id}}</td>
         <td>{{item.order_price}} руб.</td>
         <td>{{item.comment}}</td>
         <td><a href="{% url 'admin:flower_shop_order_change' object_id=item.id %}?next={{ request.get_full_path|urlencode }}">
