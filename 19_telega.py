@@ -34,9 +34,9 @@ class States(Enum):
 
 class BotData:
     FLORIST_CHAT_ID = 704859099
-    COURIER_CHAT_ID = 5432002795
+    COURIER_CHAT_ID = 704859099
     # frorist_chat_id = 704859099
-    # courier_chat_id = 704859099
+    # courier_chat_id = 5432002795
 
 
 def call_api_get(endpoint):
@@ -148,9 +148,33 @@ def send_orders_courier(update, context):
         "delivered_at": update.message.text,
     }
     response = call_api_post('courier/send/', payload=payload)
-    # TODO взять инфу с джейсона и прислать курьеру заказы
-    return
+    orders = response['orders']
+    update.message.chat.id = BotData.COURIER_CHAT_ID
 
+    for order in orders:
+        menu_msg = dedent(f"""\
+                    <b>Адрес:</b>
+                    {order['address']}
+                    <b>Время доставки:</b>
+                    {order['delivered_at']}
+                    <b>Контактное лицо:</b>
+                    {order['firstname']}
+                    <b>Тип оплаты:</b>
+                    {order['method_payment']}
+                    <b>Телефон:</b>
+                    {order['phonenumber']}
+                    <b>ID букета:</b>
+                    {order['bunch_id']}
+                    <b>Цена:</b>
+                    {order['price']}
+                    <b>Комментарий:</b>
+                    {order['comment']}
+                    """).replace("    ", "")
+        update.message.reply_text(
+            text=menu_msg,
+            parse_mode=ParseMode.HTML
+        )
+    return
 
 def choise_category(update, context):
     response = call_api_get('categories/send/')
