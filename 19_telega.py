@@ -1,5 +1,4 @@
 import os
-import pprint
 from enum import Enum, auto
 from random import choice
 from textwrap import dedent
@@ -44,6 +43,7 @@ def call_api_get(endpoint):
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
+
 
 def call_api_post(endpoint, payload):
     url = f"http://127.0.0.1:8000/{endpoint}"
@@ -175,6 +175,7 @@ def send_orders_courier(update, context):
             parse_mode=ParseMode.HTML
         )
     return
+
 
 def choise_category(update, context):
     response = call_api_get('categories/send/')
