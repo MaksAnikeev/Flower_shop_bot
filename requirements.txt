@@ -7,4 +7,4 @@ requests
 python-dotenv==0.21.0
 more-itertools==9.0.0
 phonenumbers==8.13.4
-adminsortable2==2.1.4
+django-admin-sortable2

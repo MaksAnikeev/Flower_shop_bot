@@ -91,6 +91,23 @@ def send_categories(request) -> JsonResponse:
     return JsonResponse(response, status=200)
 
 
+from rest_framework.decorators import api_view
+@api_view(['GET'])
+def send_test_categories(request):
+    """
+    для теста pytest
+    """
+    from flower_shop.serializer import CategoryPriceSerializer
+    from rest_framework.response import Response
+    from http import HTTPStatus
+    categories = CategoryPrice.objects.all()
+    serializer = CategoryPriceSerializer(categories, many=True)
+    return Response(
+        data=serializer.data,
+        status=HTTPStatus.OK
+    )
+
+
 def send_reasons(request) -> JsonResponse:
     """
     Отправка повода для формирования клавиатуры

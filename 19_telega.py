@@ -32,8 +32,8 @@ class States(Enum):
 
 
 class BotData:
-    FLORIST_CHAT_ID = 704859099
-    COURIER_CHAT_ID = 704859099
+    FLORIST_CHAT_ID = 5432002795
+    COURIER_CHAT_ID = 5432002795
     # frorist_chat_id = 704859099
     # courier_chat_id = 5432002795
 
